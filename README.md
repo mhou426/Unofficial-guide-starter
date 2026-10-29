@@ -1,28 +1,15 @@
 # The Unofficial Guide — Project 1
 
-> **How to use this template:**
-> Complete each section *after* you've built and tested the corresponding part of your system.
-> Do not write placeholder text — if a section isn't done yet, leave it blank and come back.
-> Every section below is required for submission. One-liners will not receive full credit.
-
 A Retrieval-Augmented Generation (RAG) system that answers plain-language questions about living in Stony Brook University on-campus housing, grounded in real student reviews and Reddit threads.
 ---
 
 ## Domain
 
-<!-- What topic or category of knowledge does your system cover?
-     Why is this knowledge valuable, and why is it hard to find through official channels?
-     Example: "Student reviews of CS professors at [university] — useful because official
-     course descriptions don't reflect teaching style, exam difficulty, or workload." -->
 This system covers the lived reality of SBU on-campus housing, mold, pests, noise, natural light, odors, and the practical question of what to do when something goes wrong. This knowledge is valuable because the university does not officially disclose these problems; nothing in the housing portal will tell you which dorm has black mold or which building is known for bugs. Students learn it only from each other, scattered across reviews and forum threads, which makes it hard to find and easy to miss when choosing where to live.
 
 ---
 
 ## Document Sources
-
-<!-- List every source you collected documents from.
-     Be specific: include URLs, subreddit names, forum thread titles, or file names.
-     Aim for variety — sources that together cover different subtopics or perspectives. -->
 Documents were collected manually, since both Reddit and RateMyDorm are JavaScript-rendered and resist automated scraping.
 
 | # | Source | Type | URL or file path |
@@ -43,13 +30,6 @@ The sources cover a deliberate spread of subtopics: mold (Kelly, West C, Hendrix
 ---
 
 ## Chunking Strategy
-
-<!-- Describe your chunking approach with enough specificity that someone else could reproduce it.
-     Include:
-     - Chunk size (characters or tokens) and why that size fits your documents
-     - Overlap size and why (or why not) you used overlap
-     - Any preprocessing you did before chunking (e.g., stripping HTML, removing headers)
-     - What your final chunk count was across all documents -->
 
 **Chunk size:** ~300–500 characters (roughly 2–4 sentences).
 
@@ -100,12 +80,6 @@ Relevance: The Yang and Keller chunks directly describe the infestations and sug
 
 ## Embedding Model
 
-<!-- Name the embedding model you used and explain your choice.
-     Then answer: if you were deploying this system for real users and cost wasn't a constraint,
-     what tradeoffs would you weigh in choosing a different model?
-     Consider: context length limits, multilingual support, accuracy on domain-specific text,
-     latency, and local vs. API-hosted. -->
-
 **Model used:** all-MiniLM-L6-v2, via sentence-transformers, with chunks stored in a local ChromaDB collection. It runs locally with no API key or rate limits, which suits a small free-tier project.
 
 **Production tradeoff reflection:** For a real deployment serving live users, I would weigh several factors when choosing a model. Accuracy on domain-specific text matters most here, the corpus is full of dorm and quad names (Roth, H-quad, Lauterbur) that a general-purpose model may not embed precisely, and a larger paid model would likely distinguish them better. I would also weigh context length, since longer reviews could be embedded whole rather than split; multilingual support, if the student body writes in more than one language; and the latency and cost of an API-hosted model against the privacy and zero-cost of running locally. MiniLM trades some accuracy for being free, fast, and self-contained, which is the right tradeoff for this project but not necessarily for production.
@@ -113,13 +87,6 @@ Relevance: The Yang and Keller chunks directly describe the infestations and sug
 ---
 
 ## Grounded Generation
-
-<!-- Explain how your system enforces grounding — how does it prevent the LLM from answering
-     beyond the retrieved documents?
-     Describe both your system prompt (what instruction you gave the model) and any structural
-     choices (e.g., how you formatted the context, whether you filtered low-relevance chunks).
-     Do not just say "I told it to use the documents" — show the actual instruction or explain
-     the mechanism. -->
 
 **System prompt grounding instruction:** The model (llama-3.3-70b-versatile via Groq, temperature 0) is instructed to answer using only the provided context, and if the context does not contain the answer, to reply exactly "I don't have enough information on that." The retrieved chunks are passed in as clearly labeled context blocks, each prefixed with its source, so the model can only draw on what was retrieved rather than its general training knowledge. Temperature 0 keeps answers consistent and reduces the chance of the model embellishing beyond the context.
 
@@ -162,10 +129,6 @@ Evaluation: The system correctly declined to answer, since no document in the co
 
 ## Evaluation Report
 
-<!-- Run your 5 test questions from planning.md through your system and record the results.
-     Be honest — a partially accurate or inaccurate result that you explain well is more
-     valuable than a suspiciously perfect result. -->
-
 | # | Question | Expected answer | System response (summarized) | Retrieval quality | Response accuracy |
 |---|----------|-----------------|------------------------------|-------------------|-------------------|
 | 1 | Which dorms have students reported mold problems in? | Kelly, West C, and Hendrix | Named West C and an "unnamed" dorm from the Kelly source; did not name Kelly or include Hendrix | Partially relevant | Partially accurate |
@@ -184,17 +147,6 @@ Four of five questions returned accurate, well-grounded answers. Question 1 was 
 
 ## Failure Case Analysis
 
-<!-- Identify at least one question where retrieval or generation did not work as expected.
-     Write a specific explanation of *why* it failed, tied to a part of the pipeline.
-
-     "The answer was wrong" is not an explanation.
-
-     "The relevant information was split across a chunk boundary, so retrieval returned
-     only half the context — the model didn't have enough to answer correctly" is an explanation.
-
-     "The embedding model treated the professor's nickname as out-of-vocabulary and returned
-     results from an unrelated review" is an explanation. -->
-
 **Question that failed:** "Which dorms have students reported mold problems in?"
 
 **What the system returned:** It named West C Apartments correctly but referred to the Kelly source as "another dorm (unnamed)," even though that document is titled "Kelly Quad," and it omitted Hendrix's carpet mold entirely. The expected answer was Kelly, West C, and Hendrix.
@@ -207,9 +159,6 @@ Four of five questions returned accurate, well-grounded answers. Question 1 was 
 
 ## Spec Reflection
 
-<!-- Reflect on how planning.md shaped your implementation.
-     Answer both questions with at least 2–3 sentences each. -->
-
 **One way the spec helped you during implementation:** Writing the chunking and retrieval sections of planning.md before any code meant I could hand an AI tool a precise specification, chunk size, overlap, top-k, and embedding model, rather than a vague request. The generated pipeline matched my intended design closely because the spec told it exactly what to build, which saved time I would otherwise have spent correcting generic code.
 
 **One way your implementation diverged from the spec, and why:** I planned for a corpus of many small chunks, but because my source documents were so short, the pipeline produced only 21 chunks, with several documents staying nearly whole. This meant retrieval often pulled entire documents rather than targeted passages, and the character-based overlap occasionally cut mid-sentence. This divergence directly contributed to the Question 1 failure, and it is something I would address by collecting longer documents or refining the splitter.
@@ -217,15 +166,6 @@ Four of five questions returned accurate, well-grounded answers. Question 1 was 
 ---
 
 ## AI Usage
-
-<!-- Describe at least 2 specific instances where you used an AI tool during this project.
-     For each: what did you give the AI as input, what did it produce, and what did you
-     change, override, or direct differently?
-
-     "I used Claude to help me code" is not sufficient.
-     "I gave Claude my Chunking Strategy section from planning.md and asked it to implement
-     chunk_text(). It returned a function using a fixed character split. I overrode the
-     chunk size from 500 to 200 because my documents are short reviews, not long guides." -->
 
 **Instance 1**
 
