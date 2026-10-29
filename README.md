@@ -1,4 +1,4 @@
-# The Unofficial Guide — Project 1
+# The Unofficial Guide
 
 A Retrieval-Augmented Generation (RAG) system that answers plain-language questions about living in Stony Brook University on-campus housing, grounded in real student reviews and Reddit threads.
 ---
